@@ -63,7 +63,8 @@ pnpm preview
 - `source/石油与天然气综合_完整版题库.docx`：完整 Word 题库源文件。
 - `public/data/questions.json`：应用读取的结构化题库。
 - `public/media/`：从 Word 提取的题目图片。
-- `public/app-icon.png`、`public/app-icon.ico`：网页与 Windows 快捷方式图标。
+- `public/app-icon.png`、`public/app-icon.ico`：网页应用图标。
+- `public/app-shortcut-icon-v2.ico`：Windows 快捷方式图标（独立文件名避免系统缓存旧图标）。
 - `public/markji.otf`：还原题目中专用字符的字体。
 - 浏览器 `localStorage`：学习进度、优先级、设置和历史记录。
 
