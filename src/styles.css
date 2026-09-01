@@ -6,7 +6,8 @@
 
 :root {
   color-scheme: light;
-  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  --font-ui: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+  font-family: var(--font-ui);
   color: #18221f;
   background: #f4f6f4;
   font-synthesis: none;
@@ -35,14 +36,14 @@ html, body, #root { min-height: 100%; margin: 0; }
 
 body { min-width: 320px; background: var(--bg); }
 
-button, input, textarea { font: inherit; letter-spacing: 0; }
+button, input, textarea, select { font: inherit; letter-spacing: 0; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 3px solid rgba(20, 125, 105, 0.2);
   outline-offset: 2px;
 }
 
-.markji { font-family: 'MarkjiGlyph', sans-serif; }
+.markji { font-family: 'MarkjiGlyph', var(--font-ui); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
 .app-shell { min-height: 100vh; }
@@ -117,7 +118,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   border-radius: 8px;
   padding: clamp(28px, 5vw, 58px) clamp(24px, 7vw, 76px);
 }
-.question-content { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 17px; line-height: 1.95; }
+.question-content { font-family: var(--font-ui); font-size: 17px; line-height: 1.95; }
 .question-content p { margin: 0 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .question-content.is-compact { font-size: 15px; line-height: 1.65; }
 .question-content.is-compact p { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -221,7 +222,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   cursor: pointer;
 }
 .question-row:hover { background: rgba(255,255,255,.65); }
-.row-number { color: #8b9691; font: 600 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace; display: flex; align-items: center; gap: 7px; }
+.row-number { color: #8b9691; font: 600 12px/1.2 var(--font-ui); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 7px; }
 .row-number i { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: 3px; color: var(--accent); font-style: normal; font-size: 10px; }
 .row-content { min-width: 0; }
 .row-content .answer-blank { width: 3.5em !important; }
