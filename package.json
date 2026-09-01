@@ -2,21 +2,60 @@
   "name": "829-memory",
   "private": true,
   "version": "1.0.0",
+  "description": "829 石油与天然气工程综合主动回忆与间隔复习桌面应用",
+  "author": "HZ-KMNO",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
+    "desktop": "electron .",
+    "desktop:build": "pnpm build && electron-builder --win portable",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
     "vitest": "latest"
+  },
+  "build": {
+    "appId": "cn.hzkmno.memory829",
+    "productName": "829石油与天然气工程综合记忆计划",
+    "asar": true,
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "public/app-shortcut-icon-v2.ico",
+        "to": "app-icon.ico"
+      }
+    ],
+    "directories": {
+      "output": "desktop-app"
+    },
+    "win": {
+      "icon": "public/app-shortcut-icon-v2.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "829-memory-plan-${version}-portable.${ext}"
+    }
   }
 }

@@ -1,5 +1,8 @@
 node_modules/
 dist/
+release/
+desktop-release/
+desktop-app/
 coverage/
 .vite/
 *.log

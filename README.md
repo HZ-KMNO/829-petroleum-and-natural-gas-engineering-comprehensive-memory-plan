@@ -18,31 +18,39 @@
 - 优先级管理：A、B、C 三档标记重点，队列内优先安排高优先级题目。
 - 错题本与统计：汇总遗忘题、掌握进度、连续学习和未来复习量。
 - 30 天计划：根据考试日期和未学习题数自动计算每日新题目标。
-- 本地数据：学习记录仅存于浏览器，可随时导出或导入 JSON 备份。
-- 响应式界面：适配桌面与手机浏览器。
+- 本地数据：学习记录仅存于本机应用，可随时导出或导入 JSON 备份。
+- 独立桌面窗口：不启动本地服务器，不打开 Edge，也不要求运行时安装 Node.js。
 
 ## Windows 快速启动
 
-1. 安装 [Node.js](https://nodejs.org/) 和 pnpm：`npm install -g pnpm`。
-2. 双击 `启动829记忆计划.cmd`。
-3. 首次启动会自动安装依赖，随后打开 <http://127.0.0.1:5173/>。
+直接双击桌面的 `829 记忆计划` 快捷方式。它会启动独立 Windows 应用，不会打开浏览器。
 
-再次双击时，如果 5173 端口上的学习服务器已经运行，脚本只会打开浏览器，不会重复
-启动服务。关闭名为 `829 Memory Server` 的命令窗口即可停止软件。
+其他电脑可以从 [GitHub Releases](https://github.com/HZ-KMNO/829-petroleum-and-natural-gas-engineering-comprehensive-memory-plan/releases/latest)
+下载 `829-memory-plan-1.0.0-portable.exe`，无需安装即可运行。
+
+本机生成的可移植程序位于：
+
+`desktop-app/829-memory-plan-1.0.0-portable.exe`
+
+该 EXE 已包含 Electron 运行时、题库和图片，可以直接运行，不依赖 pnpm。关闭应用窗口即可
+停止软件。
 
 ## 命令行使用
 
 ```powershell
 pnpm install
-pnpm dev
+pnpm desktop:build
 ```
 
-生产构建和本地预览：
+构建完成后运行 `desktop-app/829-memory-plan-1.0.0-portable.exe`。开发时也可以先构建网页资源，
+再用 Electron 直接打开：
 
 ```powershell
 pnpm build
-pnpm preview
+pnpm desktop
 ```
+
+`pnpm dev` 仍保留为可选的网页开发模式，但日常学习不需要使用。
 
 ## 复习规则
 
@@ -66,9 +74,9 @@ pnpm preview
 - `public/app-icon.png`、`public/app-icon.ico`：网页应用图标。
 - `public/app-shortcut-icon-v2.ico`：Windows 快捷方式图标（独立文件名避免系统缓存旧图标）。
 - `public/markji.otf`：还原题目中专用字符的字体。
-- 浏览器 `localStorage`：学习进度、优先级、设置和历史记录。
+- Electron 应用本地存储：学习进度、优先级、设置和历史记录。
 
-在“计划设置”中使用“导出”生成 JSON 备份，换浏览器或清理浏览器数据前应先导出。
+在“计划设置”中使用“导出”生成 JSON 备份，重装系统或清理应用数据前应先导出。
 
 ## 重新提取题库
 
@@ -84,15 +92,16 @@ python tools/extract_questions.py
 
 ```text
 study-app/
+├─ electron/               # Windows 桌面窗口与应用资源协议
 ├─ public/                 # 题库 JSON、图片和字体
 ├─ source/                 # Word 题库源文件
 ├─ src/
 │  ├─ components/         # 通用界面组件
 │  ├─ pages/              # 复习、题库、统计和设置页面
 │  ├─ scheduler.js        # 间隔复习与每日队列逻辑
-│  └─ storage.js          # 浏览器本地存储与备份
+│  └─ storage.js          # 应用本地存储与备份
 ├─ tools/                 # Word 题库提取脚本
-└─ 启动829记忆计划.cmd    # Windows 一键启动器
+└─ 启动829记忆计划.cmd    # 已构建桌面应用的一键启动器
 ```
 
 ## 测试
@@ -100,10 +109,12 @@ study-app/
 ```powershell
 pnpm test
 pnpm build
+pnpm desktop:build
 ```
 
 当前自动化测试覆盖复习间隔、遗忘重排和每日队列等核心调度逻辑。
 
 ## 技术栈
 
-React、Vite、Vitest、Lucide React。应用不需要后端服务，学习数据不会上传到网络。
+Electron、React、Vite、Vitest、Lucide React。桌面应用通过内部安全协议加载资源，不需要后端
+服务，学习数据不会上传到网络。
