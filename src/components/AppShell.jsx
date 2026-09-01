@@ -1,7 +1,6 @@
 import {
   BarChart3,
   BookOpen,
-  Brain,
   CalendarClock,
   Menu,
   Settings,
@@ -29,14 +28,20 @@ export function AppShell({ activeView, onChangeView, children, stats }) {
   return (
     <div className="app-shell">
       <header className="mobile-header">
-        <div className="brand brand-mobile"><Brain size={23} /><strong>829 记忆计划</strong></div>
+        <div className="brand brand-mobile">
+          <img className="brand-logo" src="/app-icon.png" alt="" />
+          <strong>829 记忆计划</strong>
+        </div>
         <button className="icon-button" onClick={() => setMobileOpen((value) => !value)} aria-label="打开导航">
           {mobileOpen ? <X /> : <Menu />}
         </button>
       </header>
 
       <aside className={`sidebar ${mobileOpen ? 'is-open' : ''}`}>
-        <div className="brand"><Brain size={25} /><strong>829 记忆计划</strong></div>
+        <div className="brand">
+          <img className="brand-logo" src="/app-icon.png" alt="" />
+          <strong>829 记忆计划</strong>
+        </div>
         <nav className="primary-nav" aria-label="主导航">
           {items.map(({ id, label, icon: Icon }) => (
             <button
