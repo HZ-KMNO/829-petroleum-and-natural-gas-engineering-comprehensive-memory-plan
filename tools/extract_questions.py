@@ -155,6 +155,7 @@ def extract():
     font_source = ROOT / "work" / "markji.otf"
     if font_source.exists():
         shutil.copy2(font_source, APP_ROOT / "public" / "markji.otf")
+        shutil.copy2(font_source, APP_ROOT / "public" / "_markji.otf")
     print(json.dumps({"questions": len(questions), "media": len(used_media), "output": str(output)}, ensure_ascii=False))
 
 

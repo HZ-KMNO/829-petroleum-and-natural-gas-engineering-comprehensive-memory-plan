@@ -73,7 +73,7 @@ pnpm desktop
 - `public/media/`：从 Word 提取的题目图片。
 - `public/app-icon.png`、`public/app-icon.ico`：网页应用图标。
 - `public/app-shortcut-icon-v2.ico`：Windows 快捷方式图标（独立文件名避免系统缓存旧图标）。
-- `public/markji.otf`：还原题目中专用字符的字体。
+- `public/markji.otf`：应用中还原题目专用字符的字体；`public/_markji.otf` 是 Anki 同步专用副本。
 - Electron 应用本地存储：学习进度、优先级、设置和历史记录。
 
 在“计划设置”中使用“导出”生成 JSON 备份，重装系统或清理应用数据前应先导出。
@@ -88,6 +88,21 @@ python tools/extract_questions.py
 
 它会更新 `public/data/questions.json` 和 `public/media/`。原始 Word 文件不会被修改。
 
+## 导出 Anki 牌组
+
+安装导出依赖并生成 `.apkg`：
+
+```powershell
+py -3 -m pip install -r tools/requirements-anki.txt
+py -3 tools/export_anki.py
+```
+
+默认输出为 `../outputs/829石油与天然气工程综合_完整版题库_372题.apkg`。牌组包含 372 张卡、
+36 张题图和题库专用字体；原 358 题与教材补充 14 题带有独立标签。填空题正面保留下划线空白，
+背面显示带下划线的完整答案。导出程序会自动校验卡片数量、唯一 ID、新卡顺序和媒体完整性。
+
+在 Anki 中选择“导入 Anki 牌组”，再选择生成的 `.apkg` 文件即可。
+
 ## 项目结构
 
 ```text
@@ -100,7 +115,7 @@ study-app/
 │  ├─ pages/              # 复习、题库、统计和设置页面
 │  ├─ scheduler.js        # 间隔复习与每日队列逻辑
 │  └─ storage.js          # 应用本地存储与备份
-├─ tools/                 # Word 题库提取脚本
+├─ tools/                 # Word 题库提取与 Anki 导出脚本
 └─ 启动829记忆计划.cmd    # 已构建桌面应用的一键启动器
 ```
 
