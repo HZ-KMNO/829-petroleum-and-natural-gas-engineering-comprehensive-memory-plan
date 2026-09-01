@@ -1,7 +1,7 @@
 {
   "name": "829-memory",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "829 石油与天然气工程综合主动回忆与间隔复习桌面应用",
   "author": "HZ-KMNO",
   "main": "electron/main.cjs",
@@ -43,7 +43,7 @@
       }
     ],
     "directories": {
-      "output": "desktop-app-v1.0.1"
+      "output": "desktop-app-v1.0.2"
     },
     "win": {
       "icon": "public/app-shortcut-icon-v2.ico",

@@ -133,6 +133,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   border-bottom: 2px solid var(--accent);
   background: repeating-linear-gradient(90deg, transparent 0, transparent 7px, rgba(20,125,105,.06) 7px, rgba(20,125,105,.06) 8px);
 }
+.answer-blank.is-interactive { padding: 0; border: 0; border-bottom: 2px solid var(--accent); border-radius: 0; cursor: pointer; }
+.answer-blank.is-interactive:hover { background-color: var(--accent-soft); }
 .topic-mark { background: #d9f1d5; padding: 1px 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .content-separator { height: 1px; background: var(--border); margin: 12px 0 18px; }
 .content-spacer { height: 10px; }

@@ -114,7 +114,12 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
       </div>
 
       <article className="review-surface">
-        <QuestionContent question={active} revealed={revealed} compact={mode === 'recall' && !revealed} />
+        <QuestionContent
+          question={active}
+          revealed={revealed}
+          compact={mode === 'recall' && !revealed}
+          revealOnClick={mode === 'cloze' && !revealed}
+        />
       </article>
 
       <div className="answer-area">

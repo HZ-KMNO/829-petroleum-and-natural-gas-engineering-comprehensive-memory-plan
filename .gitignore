@@ -4,6 +4,7 @@ release/
 desktop-release/
 desktop-app/
 desktop-app-v1.0.1/
+desktop-app-v1.0.2/
 coverage/
 .vite/
 *.log
