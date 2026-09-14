@@ -8,6 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { ProfileAvatar } from './ProfileAvatar';
 
 const items = [
   { id: 'today', label: '今日复习', icon: CalendarClock },
@@ -17,7 +18,7 @@ const items = [
   { id: 'settings', label: '计划设置', icon: Settings },
 ];
 
-export function AppShell({ activeView, onChangeView, children, stats }) {
+export function AppShell({ activeView, onChangeView, children, stats, profile, onSwitchProfile }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navigate = (id) => {
@@ -62,6 +63,11 @@ export function AppShell({ activeView, onChangeView, children, stats }) {
           </div>
           <div className="progress-track"><span style={{ width: `${stats.percent}%` }} /></div>
           <p>{stats.started} / {stats.total} 题已开始</p>
+        </div>
+        <div className="account-bar">
+          <ProfileAvatar avatar={profile.avatar} size="small" />
+          <span className="account-name" title={profile.username}>{profile.username}</span>
+          <button type="button" onClick={onSwitchProfile}>切换玩家</button>
         </div>
       </aside>
 

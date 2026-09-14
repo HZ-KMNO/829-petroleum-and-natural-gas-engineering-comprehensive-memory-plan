@@ -4,15 +4,30 @@ import { LibraryPage } from './pages/LibraryPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
-import { buildTodayQueue, dailyTarget, daysBetween, gradeQuestion, toDateKey } from './scheduler';
-import { useStudyState } from './storage';
+import { AuthPage } from './pages/AuthPage';
+import { DailyGoalPage } from './pages/DailyGoalPage';
+import { buildTodayQueue, DAILY_QUESTION_LIMIT, daysBetween, gradeQuestion, toDateKey } from './scheduler';
+import { useProfiles, useStudyState } from './storage';
 
 export default function App() {
+  const players = useProfiles();
+  if (!players.activeProfile) {
+    return <AuthPage profiles={players.profiles} hasLegacySave={players.hasLegacySave} onSelect={players.selectProfile} onCreate={players.createProfile} />;
+  }
+  return <StudyWorkspace key={players.activeProfile.username} profile={players.activeProfile} onSwitchProfile={players.leaveProfile} />;
+}
+
+function StudyWorkspace({ profile, onSwitchProfile }) {
+  const { username } = profile;
   const [questions, setQuestions] = useState([]);
   const [loadError, setLoadError] = useState('');
   const [view, setView] = useState('today');
   const [focusedQuestion, setFocusedQuestion] = useState(null);
-  const [state, setState] = useStudyState();
+  const [focusedReturnView, setFocusedReturnView] = useState('library');
+  const [libraryViewState, setLibraryViewState] = useState({ search: '', filter: 'all' });
+  const [mistakesViewState, setMistakesViewState] = useState({ search: '', filter: 'mistakes' });
+  const [editingDailyTarget, setEditingDailyTarget] = useState(false);
+  const [state, setState] = useStudyState(username);
 
   useEffect(() => {
     fetch('/data/questions.json')
@@ -27,33 +42,41 @@ export default function App() {
   const todayKey = toDateKey();
   const priorities = state.priorities ?? {};
   const started = Object.keys(state.progress).length;
-  const unseen = Math.max(0, questions.length - started);
-  const calculatedDaily = questions.length
-    ? dailyTarget(questions.length, unseen, state.settings.examDate)
-    : state.settings.dailyNew;
-  const dailyNew = state.settings.autoDailyNew ? calculatedDaily : state.settings.dailyNew;
+  const todayReviewed = state.history[todayKey]?.reviewed ?? 0;
+  const storedDailyTarget = state.dailyTargets?.[todayKey];
+  const dailyTarget = Number.isInteger(storedDailyTarget) ? storedDailyTarget : null;
+  const remainingToday = Math.max(0, (dailyTarget ?? 0) - todayReviewed);
   const queue = useMemo(
-    () => buildTodayQueue(questions, state.progress, dailyNew, new Date(), priorities),
-    [dailyNew, priorities, questions, state.progress],
+    () => buildTodayQueue(questions, state.progress, remainingToday, new Date(), priorities),
+    [priorities, questions, remainingToday, state.progress],
   );
 
-  useEffect(() => {
-    if (state.settings.autoDailyNew && state.settings.dailyNew !== calculatedDaily && questions.length) {
-      setState((current) => ({ ...current, settings: { ...current.settings, dailyNew: calculatedDaily } }));
-    }
-  }, [calculatedDaily, questions.length, setState, state.settings.autoDailyNew, state.settings.dailyNew]);
+  const setTodayTarget = (target) => {
+    setState((current) => ({
+      ...current,
+      dailyTargets: { ...(current.dailyTargets ?? {}), [todayKey]: target },
+      settings: { ...current.settings, defaultDailyTarget: target },
+    }));
+    setEditingDailyTarget(false);
+  };
 
   const handleGrade = (questionId, grade) => {
     setState((current) => {
       const previous = current.progress[questionId] ?? {};
       const progress = { ...current.progress, [questionId]: gradeQuestion(previous, grade) };
       const today = current.history[todayKey] ?? { reviewed: 0, again: 0, hard: 0, good: 0, easy: 0 };
+      const reviewed = Number(today.reviewed);
+      const gradeCount = Number(today[grade]);
       return {
         ...current,
         progress,
         history: {
           ...current.history,
-          [todayKey]: { ...today, reviewed: today.reviewed + 1, [grade]: today[grade] + 1 },
+          [todayKey]: {
+            ...today,
+            reviewed: (Number.isFinite(reviewed) ? reviewed : 0) + 1,
+            [grade]: (Number.isFinite(gradeCount) ? gradeCount : 0) + 1,
+          },
         },
       };
     });
@@ -66,15 +89,21 @@ export default function App() {
     }));
   };
 
-  const openQuestion = (question) => {
+  const openQuestion = (question, returnView = 'library') => {
     setFocusedQuestion(question);
+    setFocusedReturnView(returnView);
     setView('today');
+  };
+
+  const clearFocusedQuestion = () => {
+    setFocusedQuestion(null);
+    setView(focusedReturnView);
   };
 
   const mastered = Object.values(state.progress).filter((item) => item.mastered).length;
   const mistakes = Object.values(state.progress).filter((item) => item.lapses > 0).length;
   const shellStats = {
-    total: questions.length || 372,
+    total: questions.length || 369,
     started,
     mastered,
     mistakes,
@@ -83,24 +112,34 @@ export default function App() {
   };
 
   if (loadError) return <div className="app-error">{loadError}</div>;
-  if (!questions.length) return <div className="app-loading"><span /><p>正在整理 372 道题目…</p></div>;
+  if (!questions.length) return <div className="app-loading"><span /><p>正在整理题目…</p></div>;
 
   return (
-    <AppShell activeView={view} onChangeView={setView} stats={shellStats}>
-      {view === 'today' && (
+    <AppShell activeView={view} onChangeView={setView} stats={shellStats} profile={profile} onSwitchProfile={onSwitchProfile}>
+      {view === 'today' && !focusedQuestion && (dailyTarget == null || editingDailyTarget) && (
+        <DailyGoalPage
+          initialValue={dailyTarget ?? state.settings.defaultDailyTarget ?? DAILY_QUESTION_LIMIT}
+          completed={todayReviewed}
+          maximum={questions.length}
+          editing={editingDailyTarget}
+          onConfirm={setTodayTarget}
+        />
+      )}
+      {view === 'today' && (focusedQuestion || (dailyTarget != null && !editingDailyTarget)) && (
         <ReviewPage
           queue={queue}
           focusedQuestion={focusedQuestion}
-          onClearFocus={() => setFocusedQuestion(null)}
+          onClearFocus={clearFocusedQuestion}
           onGrade={handleGrade}
-          todayReviewed={state.history[todayKey]?.reviewed ?? 0}
-          dailyNew={dailyNew}
+          todayReviewed={todayReviewed}
+          dailyTarget={dailyTarget ?? DAILY_QUESTION_LIMIT}
+          onEditDailyTarget={() => setEditingDailyTarget(true)}
           priorities={priorities}
           onPriority={handlePriority}
         />
       )}
-      {view === 'library' && <LibraryPage questions={questions} progress={state.progress} priorities={priorities} onOpenQuestion={openQuestion} />}
-      {view === 'mistakes' && <LibraryPage questions={questions} progress={state.progress} priorities={priorities} onOpenQuestion={openQuestion} mistakesOnly />}
+      {view === 'library' && <LibraryPage questions={questions} progress={state.progress} priorities={priorities} onOpenQuestion={(question) => openQuestion(question, 'library')} viewState={libraryViewState} onViewStateChange={(next) => setLibraryViewState((current) => ({ ...current, ...next }))} />}
+      {view === 'mistakes' && <LibraryPage questions={questions} progress={state.progress} priorities={priorities} onOpenQuestion={(question) => openQuestion(question, 'mistakes')} mistakesOnly viewState={mistakesViewState} onViewStateChange={(next) => setMistakesViewState((current) => ({ ...current, ...next }))} />}
       {view === 'stats' && <StatsPage questions={questions} progress={state.progress} history={state.history} />}
       {view === 'settings' && <SettingsPage state={state} onChange={setState} />}
     </AppShell>

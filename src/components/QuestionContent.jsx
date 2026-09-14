@@ -1,73 +1,103 @@
 import { useMemo, useState } from 'react';
+import { Image as ImageIcon } from 'lucide-react';
 
-function Segment({ segment, revealed, revealOnClick, onReveal }) {
-  const className = segment.markji ? 'markji' : undefined;
-  if (segment.kind === 'fill') {
-    if (revealed) {
-      return <span className={`answer-fill ${className ?? ''}`}>{segment.text}</span>;
-    }
-    const width = Math.min(22, Math.max(3, Array.from(segment.text).length + 1));
-    if (revealOnClick) {
-      return (
-        <button
-          type="button"
-          className={`answer-blank is-interactive ${className ?? ''}`}
-          style={{ '--blank-width': `${width}em` }}
-          aria-label="显示此处答案"
-          onClick={onReveal}
-        />
-      );
-    }
+export function splitParagraph(text, clozes = []) {
+  const parts = [];
+  let cursor = 0;
+  clozes.forEach((cloze, clozeIndex) => {
+    if (cloze.start > cursor) parts.push({ kind: 'text', text: text.slice(cursor, cloze.start) });
+    parts.push({
+      kind: 'fill',
+      text: text.slice(cloze.start, cloze.end),
+      clozeIndex,
+    });
+    cursor = cloze.end;
+  });
+  if (cursor < text.length) parts.push({ kind: 'text', text: text.slice(cursor) });
+  return parts;
+}
+
+function TextPart({ part, revealed, revealOnClick, onReveal }) {
+  if (part.kind !== 'fill') return part.text;
+  if (revealed) return <span className="answer-fill">{part.text}</span>;
+
+  // Keep the recall bar the same visual length as the hidden answer.  Chinese
+  // characters and Latin symbols are rendered in an em-sized text run, so
+  // using the actual code-point count avoids the old fixed/minimum bar that
+  // made short answers look too long and long answers look truncated.
+  const width = Math.max(1, Array.from(part.text).length);
+  if (revealOnClick) {
     return (
-      <span
-        className={`answer-blank ${className ?? ''}`}
+      <button
+        type="button"
+        className="answer-blank is-interactive"
         style={{ '--blank-width': `${width}em` }}
-        aria-label="待回忆内容"
+        aria-label="显示此处答案"
+        onClick={onReveal}
       />
     );
   }
-  if (segment.kind === 'topic') {
-    return <span className={`topic-mark ${className ?? ''}`}>{segment.text}</span>;
-  }
-  return <span className={className}>{segment.text}</span>;
+  return (
+    <span
+      className="answer-blank"
+      style={{ '--blank-width': `${width}em` }}
+      aria-label="待回忆内容"
+    />
+  );
 }
 
 export function QuestionContent({ question, revealed = false, compact = false, revealOnClick = false }) {
-  const [partialReveal, setPartialReveal] = useState(() => ({ questionId: question.id, segments: new Set() }));
+  const [partialReveal, setPartialReveal] = useState(() => ({ questionId: question.id, clozes: new Set() }));
+  const [revealedImages, setRevealedImages] = useState(() => ({ questionId: question.id, blocks: new Set() }));
   const blocks = useMemo(() => {
-    if (!compact) return question.blocks;
-    const firstParagraph = question.blocks.find((block) => block.type === 'paragraph');
-    return firstParagraph ? [firstParagraph] : [];
+    const sourceBlocks = compact
+      ? question.blocks.filter((block) => block.type === 'paragraph').slice(0, 1)
+      : question.blocks;
+    return sourceBlocks.map((block) => (
+      block.type === 'paragraph' ? { ...block, parts: splitParagraph(block.text, block.clozes) } : block
+    ));
   }, [compact, question]);
-  const revealedSegments = partialReveal.questionId === question.id ? partialReveal.segments : new Set();
+  const revealedClozes = partialReveal.questionId === question.id ? partialReveal.clozes : new Set();
 
-  const revealSegment = (segmentKey) => {
+  const revealCloze = (clozeKey) => {
     setPartialReveal((current) => {
-      const segments = current.questionId === question.id ? new Set(current.segments) : new Set();
-      segments.add(segmentKey);
-      return { questionId: question.id, segments };
+      const clozes = current.questionId === question.id ? new Set(current.clozes) : new Set();
+      clozes.add(clozeKey);
+      return { questionId: question.id, clozes };
+    });
+  };
+
+  const revealImage = (blockIndex) => {
+    setRevealedImages((current) => {
+      const blocks = current.questionId === question.id ? new Set(current.blocks) : new Set();
+      blocks.add(blockIndex);
+      return { questionId: question.id, blocks };
     });
   };
 
   return (
     <div className={`question-content ${compact ? 'is-compact' : ''}`}>
-      {blocks.map((block, index) => {
-        if (block.type === 'separator') return <div className="content-separator" key={index} />;
-        if (block.type === 'spacer') return <div className="content-spacer" key={index} />;
+      {blocks.map((block, blockIndex) => {
+        if (block.type === 'separator') return <div className="content-separator" key={blockIndex} />;
+        if (block.type === 'spacer') return <div className="content-spacer" key={blockIndex} />;
         if (block.type === 'image') {
-          return <img className="question-image" src={block.src} alt={`第 ${question.id} 题配图`} key={index} />;
+          const imageRevealed = revealed || (revealedImages.questionId === question.id && revealedImages.blocks.has(blockIndex));
+          if (!imageRevealed && revealOnClick) {
+            return <button className="question-image-blank" type="button" onClick={() => revealImage(blockIndex)} aria-label="显示公式图片" title="显示公式图片" key={blockIndex}><ImageIcon size={24} /></button>;
+          }
+          return <img className="question-image" src={block.src} alt={`第 ${question.id} 题公式图片`} key={blockIndex} />;
         }
         return (
-          <p key={index}>
-            {block.segments.map((segment, segmentIndex) => {
-              const segmentKey = `${index}:${segmentIndex}`;
+          <p key={blockIndex}>
+            {block.parts.map((part, partIndex) => {
+              const clozeKey = `${blockIndex}:${part.clozeIndex}`;
               return (
-                <Segment
-                  segment={segment}
-                  revealed={revealed || revealedSegments.has(segmentKey)}
+                <TextPart
+                  part={part}
+                  revealed={revealed || revealedClozes.has(clozeKey)}
                   revealOnClick={revealOnClick}
-                  onReveal={() => revealSegment(segmentKey)}
-                  key={segmentIndex}
+                  onReveal={() => revealCloze(clozeKey)}
+                  key={partIndex}
                 />
               );
             })}

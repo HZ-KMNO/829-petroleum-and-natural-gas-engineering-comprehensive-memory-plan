@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, Eye, Gauge, RotateCcw, Sparkles } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Eye, Gauge, RotateCcw, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { QuestionContent } from '../components/QuestionContent';
 
 const grades = [
@@ -9,14 +9,14 @@ const grades = [
   { id: 'easy', label: '熟练', icon: Sparkles },
 ];
 
-export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPriority, priorities, todayReviewed, dailyNew }) {
-  const [index, setIndex] = useState(0);
+export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPriority, priorities, todayReviewed, dailyTarget, onEditDailyTarget }) {
+  const [session, setSession] = useState(() => ({ items: queue, index: 0 }));
   const [revealed, setRevealed] = useState(false);
   const [answer, setAnswer] = useState('');
   const [mode, setMode] = useState('cloze');
-  const [sessionQueue, setSessionQueue] = useState(() => queue);
   const answerRef = useRef(null);
 
+  const { items: sessionQueue, index } = session;
   const active = focusedQuestion ?? sessionQueue[index];
   const isFocused = Boolean(focusedQuestion);
 
@@ -27,11 +27,13 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
 
   useEffect(() => {
     const handler = (event) => {
-      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement) return;
+      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
       if (event.code === 'Space' && active && !revealed) {
         event.preventDefault();
         setRevealed(true);
       }
+      if (!isFocused && event.code === 'ArrowLeft') { event.preventDefault(); goPrevious(); }
+      if (!isFocused && event.code === 'ArrowRight') { event.preventDefault(); goNext(); }
       if (revealed && ['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(event.code)) {
         const grade = grades[Number(event.code.slice(-1)) - 1];
         if (grade) handleGrade(grade.id);
@@ -41,6 +43,16 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
     return () => window.removeEventListener('keydown', handler);
   });
 
+  const goPrevious = () => {
+    if (isFocused) return;
+    setSession((current) => ({ ...current, index: Math.max(0, current.index - 1) }));
+  };
+
+  const goNext = () => {
+    if (isFocused) return;
+    setSession((current) => ({ ...current, index: Math.min(current.items.length - 1, current.index + 1) }));
+  };
+
   const handleGrade = (grade) => {
     if (!active) return;
     onGrade(active.id, grade);
@@ -48,8 +60,7 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
       onClearFocus();
       return;
     }
-    if (grade === 'again') setSessionQueue((items) => [...items, active]);
-    setIndex((value) => value + 1);
+    setSession((current) => advanceReviewSession(current, active.id));
   };
 
   if (!active) {
@@ -62,7 +73,10 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
           <div className="completion-icon"><Check size={34} /></div>
           <h2>今天的记忆已经加固</h2>
           <p>已完成 {todayReviewed} 次复习，明天继续按计划推进。</p>
-          <button className="primary-button" onClick={() => window.location.reload()}>检查最新任务</button>
+          <div className="completion-actions">
+            <button className="primary-button" onClick={() => window.location.reload()}>检查最新任务</button>
+            <button className="secondary-button" onClick={onEditDailyTarget}><SlidersHorizontal size={17} />调整今日题量</button>
+          </div>
         </div>
       </section>
     );
@@ -83,7 +97,9 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
         </div>
         <div className="header-metrics">
           <span><strong>{todayReviewed}</strong><small>今日完成</small></span>
-          <span><strong>{dailyNew}</strong><small>新题目标</small></span>
+          <button className="daily-target-metric" type="button" onClick={onEditDailyTarget} title="调整今日题量">
+            <strong>{dailyTarget}</strong><small>今日目标</small>
+          </button>
         </div>
       </header>
 
@@ -96,6 +112,7 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
       <div className="review-toolbar">
         <div className="question-meta">
           <span className="question-number">第 {active.id} 题</span>
+          <span className="chapter-label">第 {active.chapter?.number ?? 0} 章 · {active.chapter?.title ?? '综合题'}</span>
           <select
             aria-label="题目级别"
             value={priorities[active.id] ?? 'B'}
@@ -134,6 +151,13 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
         />
       </div>
 
+      {!isFocused && (
+        <div className="question-navigation" aria-label="题目切换">
+          <button type="button" onClick={goPrevious} disabled={index === 0} title="上一题"><ChevronLeft size={18} />上一题</button>
+          <button type="button" onClick={goNext} disabled={index >= sessionQueue.length - 1} title="下一题">下一题<ChevronRight size={18} /></button>
+        </div>
+      )}
+
       {!revealed ? (
         <button className="reveal-button" onClick={() => setRevealed(true)}><Eye size={20} />核对答案</button>
       ) : (
@@ -148,4 +172,14 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
       )}
     </section>
   );
+}
+
+export function advanceReviewSession(session, answeredId) {
+  const answeredIndex = session.items.findIndex((question) => question.id === answeredId);
+  if (answeredIndex < 0) return session;
+  const items = session.items.filter((_, itemIndex) => itemIndex !== answeredIndex);
+  return {
+    items,
+    index: Math.min(session.index, Math.max(0, items.length - 1)),
+  };
 }

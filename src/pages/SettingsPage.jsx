@@ -35,20 +35,18 @@ export function SettingsPage({ state, onChange }) {
       </section>
 
       <section className="settings-section">
-        <div><h2>每日新题</h2></div>
+        <div><h2>每日默认题量</h2><p>每天开始学习前仍可单独调整</p></div>
         <div className="setting-control">
-          <label className="toggle-row">
-            <input type="checkbox" checked={state.settings.autoDailyNew} onChange={(event) => patchSettings({ autoDailyNew: event.target.checked })} />
-            <span>自动计算</span>
-          </label>
           <input
             type="number"
             min="1"
-            max="60"
-            value={state.settings.dailyNew}
-            disabled={state.settings.autoDailyNew}
-            onChange={(event) => patchSettings({ dailyNew: Number(event.target.value) })}
+            max="369"
+            step="1"
+            value={state.settings.defaultDailyTarget ?? 40}
+            onChange={(event) => patchSettings({ defaultDailyTarget: Number(event.target.value) })}
+            aria-label="每日默认题量"
           />
+          <span>题</span>
         </div>
       </section>
 

@@ -3,8 +3,9 @@ dist/
 release/
 desktop-release/
 desktop-app/
-desktop-app-v1.0.1/
-desktop-app-v1.0.2/
+desktop-app-v*/
+app-package*/
+*.asar
 coverage/
 .vite/
 *.log
@@ -16,3 +17,32 @@ Thumbs.db
 .idea/
 .vscode/
 work/
+
+# Local reference material and superseded source files
+*.pdf
+教材-OCR.txt
+source/*.docx
+source/questions.pre-dedup-*.json
+
+# Local smoke-test, OCR and save-migration artifacts
+/.ocr-pages/
+/.ocrdeps/
+/%SystemDrive%/
+/diagnostic-user-data-*/
+/qa-markji-glyphs/
+/save-backups/
+/smoke-user-data/
+/smoke-v*/
+/*.png
+
+# One-off migration and inspection helpers retained only in the local workspace
+tools/_*.py
+tools/_*.json
+tools/export_anki.py
+tools/extract_questions.py
+tools/legacy-font-map.json
+tools/ocr_textbook.py
+tools/reblank_questions.mjs
+tools/render_markji_glyphs.py
+tools/smoke_daily_goal.mjs
+启动829记忆计划.cmd

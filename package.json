@@ -1,7 +1,7 @@
 {
   "name": "829-memory",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.18",
   "description": "829 石油与天然气工程综合主动回忆与间隔复习桌面应用",
   "author": "HZ-KMNO",
   "main": "electron/main.cjs",
@@ -10,7 +10,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "desktop": "electron .",
-    "desktop:build": "pnpm build && electron-builder --win portable",
+    "desktop:build": "pnpm build && electron-builder --win nsis",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run"
   },
@@ -38,24 +38,32 @@
     ],
     "extraResources": [
       {
-        "from": "public/app-shortcut-icon-v2.ico",
+        "from": "public/app-shortcut-icon-v3.ico",
         "to": "app-icon.ico"
       }
     ],
     "directories": {
-      "output": "desktop-app-v1.0.2"
+      "output": "desktop-app-v1.0.18"
     },
     "win": {
-      "icon": "public/app-shortcut-icon-v2.ico",
+      "icon": "public/app-shortcut-icon-v3.ico",
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ],
-      "artifactName": "829-memory-plan-${version}-portable.${ext}"
+      "artifactName": "829-memory-plan-${version}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "829 记忆计划",
+      "deleteAppDataOnUninstall": false
     }
   }
 }

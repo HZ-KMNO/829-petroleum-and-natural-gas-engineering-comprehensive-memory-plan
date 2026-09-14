@@ -12,14 +12,22 @@ const filters = [
 function plainText(question) {
   return question.blocks
     .filter((block) => block.type === 'paragraph')
-    .flatMap((block) => block.segments)
-    .map((segment) => segment.text)
+    .map((block) => block.text)
     .join('');
 }
 
-export function LibraryPage({ questions, progress, priorities, onOpenQuestion, mistakesOnly = false }) {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState(mistakesOnly ? 'mistakes' : 'all');
+export function LibraryPage({ questions, progress, priorities, onOpenQuestion, mistakesOnly = false, viewState, onViewStateChange }) {
+  const [localSearch, setLocalSearch] = useState('');
+  const [localFilter, setLocalFilter] = useState(mistakesOnly ? 'mistakes' : 'all');
+  const search = viewState?.search ?? localSearch;
+  const filter = viewState?.filter ?? localFilter;
+  const updateViewState = (next) => {
+    if (onViewStateChange) onViewStateChange(next);
+    else {
+      if (next.search !== undefined) setLocalSearch(next.search);
+      if (next.filter !== undefined) setLocalFilter(next.filter);
+    }
+  };
 
   const results = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -37,18 +45,18 @@ export function LibraryPage({ questions, progress, priorities, onOpenQuestion, m
   return (
     <section className="page library-page">
       <header className="page-header">
-        <div><p className="date-label">372 题完整版</p><h1>{mistakesOnly ? '错题本' : '全部题库'}</h1></div>
+        <div><p className="date-label">{questions.length} 题完整版</p><h1>{mistakesOnly ? '错题本' : '全部题库'}</h1></div>
         <div className="result-count"><strong>{results.length}</strong><span>道题目</span></div>
       </header>
 
       <div className="library-controls">
         <label className="search-field">
           <Search size={19} />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索题目或编号" />
+          <input value={search} onChange={(event) => updateViewState({ search: event.target.value })} placeholder="搜索题目或编号" />
         </label>
         {!mistakesOnly && (
           <div className="filter-tabs"><SlidersHorizontal size={18} />{filters.map(([id, label]) => (
-            <button className={filter === id ? 'active' : ''} onClick={() => setFilter(id)} key={id}>{label}</button>
+            <button className={filter === id ? 'active' : ''} onClick={() => updateViewState({ filter: id })} key={id}>{label}</button>
           ))}</div>
         )}
       </div>
@@ -60,7 +68,7 @@ export function LibraryPage({ questions, progress, priorities, onOpenQuestion, m
           return (
             <button className="question-row" onClick={() => onOpenQuestion(question)} key={question.id}>
               <span className="row-number"><i>{priorities[question.id] ?? 'B'}</i>{String(question.id).padStart(3, '0')}</span>
-              <div className="row-content"><QuestionContent question={question} compact /></div>
+              <div className="row-content"><div className="row-chapter">第 {question.chapter?.number ?? 0} 章 · {question.chapter?.title ?? '综合题'}</div><QuestionContent question={question} compact /></div>
               <span className={`status-text status-${status}`}>{status}</span>
             </button>
           );

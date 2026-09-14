@@ -6,6 +6,13 @@ const { pathToFileURL } = require('node:url');
 const APP_SCHEME = 'study829';
 const APP_ORIGIN = `${APP_SCHEME}://app`;
 const DIST_DIR = path.resolve(__dirname, '..', 'dist');
+const DEFAULT_USER_DATA_DIR = path.join(app.getPath('appData'), '829-memory');
+const USER_DATA_DIR = process.env.MEMORY829_USER_DATA_DIR || DEFAULT_USER_DATA_DIR;
+
+// Keep every installed and unpacked release on the same save directory even
+// if the product name or installation directory changes in a later version.
+fs.mkdirSync(USER_DATA_DIR, { recursive: true });
+app.setPath('userData', USER_DATA_DIR);
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -45,7 +52,7 @@ function registerAppProtocol() {
 
 function applicationIconPath() {
   if (app.isPackaged) return path.join(process.resourcesPath, 'app-icon.ico');
-  return path.resolve(__dirname, '..', 'public', 'app-shortcut-icon-v2.ico');
+  return path.resolve(__dirname, '..', 'public', 'app-shortcut-icon-v3.ico');
 }
 
 function createWindow() {
