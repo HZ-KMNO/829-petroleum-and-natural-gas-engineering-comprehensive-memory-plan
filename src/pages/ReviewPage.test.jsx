@@ -14,4 +14,20 @@ describe('review session queue', () => {
 
     expect(result).toEqual({ items: [], index: 0 });
   });
+
+  it('places a question marked 不会 after three other questions', () => {
+    const result = advanceReviewSession({
+      items: [{ id: 20 }, { id: 21 }, { id: 22 }, { id: 23 }, { id: 24 }],
+      index: 0,
+    }, 20, 'again');
+
+    expect(result.items.map((question) => question.id)).toEqual([21, 22, 23, 20, 24]);
+    expect(result.items[result.index].id).toBe(21);
+  });
+
+  it('keeps a lone 不会 question in the session for immediate reinforcement', () => {
+    const result = advanceReviewSession({ items: [{ id: 20 }], index: 0 }, 20, 'again');
+
+    expect(result).toEqual({ items: [{ id: 20 }], index: 0 });
+  });
 });

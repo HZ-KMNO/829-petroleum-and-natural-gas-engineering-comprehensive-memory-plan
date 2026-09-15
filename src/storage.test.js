@@ -53,6 +53,24 @@ describe('study state normalization', () => {
     });
   });
 
+  it('preserves unique question counts separately from repeated attempts', () => {
+    const state = normalizeStudyState({
+      history: {
+        '2026-09-14': {
+          reviewed: 3,
+          attempts: 5,
+          reviewedQuestionIds: [20, '20', 21, 'invalid'],
+        },
+      },
+    });
+
+    expect(state.history['2026-09-14']).toMatchObject({
+      reviewed: 3,
+      attempts: 5,
+      reviewedQuestionIds: ['20', '21'],
+    });
+  });
+
   it('renumbers legacy question progress without rewriting aggregate study history', () => {
     const history = { '2026-09-10': { reviewed: 3, good: 3 } };
     const state = migrateQuestionNumbers({

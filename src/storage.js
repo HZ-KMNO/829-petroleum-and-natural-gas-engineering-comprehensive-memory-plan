@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { addDays, toDateKey } from './scheduler';
 import { addProfile, normalizeProfileStore } from './profiles';
 
+// The QA build used a separate key in the same Electron user-data directory.
+// Keep it as a read-compatible source so reinstalling or launching a build
+// with a query flag never hides an existing player save.
+const STORAGE_KEYS = ['829-memory-state-v1', '829-memory-state-qa-v1'];
 const STORAGE_KEY = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('qa')
   ? '829-memory-state-qa-v1'
   : '829-memory-state-v1';
@@ -13,6 +17,20 @@ function userStorageKey(username) {
   return `${STORAGE_KEY}:user:${encodeURIComponent(username)}`;
 }
 
+function userStorageKeys(username) {
+  const encoded = encodeURIComponent(username);
+  return [STORAGE_KEY, ...STORAGE_KEYS.filter((key) => key !== STORAGE_KEY)]
+    .map((key) => `${key}:user:${encoded}`);
+}
+
+function readFirstJson(keys) {
+  for (const key of keys) {
+    const value = readJson(key);
+    if (value) return { key, value };
+  }
+  return { key: null, value: null };
+}
+
 function readJson(key) {
   try {
     return JSON.parse(localStorage.getItem(key) || 'null');
@@ -22,11 +40,12 @@ function readJson(key) {
 }
 
 function discoverStoredProfileNames() {
-  const prefix = `${STORAGE_KEY}:user:`;
+  const prefixes = STORAGE_KEYS.map((key) => `${key}:user:`);
   const names = [];
   for (let index = 0; index < localStorage.length; index += 1) {
     const key = localStorage.key(index);
-    if (!key?.startsWith(prefix)) continue;
+    const prefix = prefixes.find((candidate) => key?.startsWith(candidate));
+    if (!prefix) continue;
     try {
       names.push(decodeURIComponent(key.slice(prefix.length)));
     } catch {
@@ -53,15 +72,16 @@ export function useProfiles() {
   const [store, setStore] = useState(() => readProfileStore());
   const [activeUsername, setActiveUsername] = useState('');
   const [hasLegacySave, setHasLegacySave] = useState(() => (
-    Boolean(localStorage.getItem(STORAGE_KEY)) && !localStorage.getItem(LEGACY_CLAIM_KEY)
+    STORAGE_KEYS.some((key) => Boolean(localStorage.getItem(key)))
+      && !localStorage.getItem(LEGACY_CLAIM_KEY)
   ));
 
   const createProfile = useCallback((name, avatar, options = {}) => {
     const current = readProfileStore();
     const [next, profile] = addProfile(current, name, avatar);
-    const legacy = localStorage.getItem(STORAGE_KEY);
+    const legacy = readFirstJson(STORAGE_KEYS).value;
     if (options.migrateLegacy && legacy && !localStorage.getItem(userStorageKey(profile.username))) {
-      localStorage.setItem(userStorageKey(profile.username), legacy);
+      localStorage.setItem(userStorageKey(profile.username), JSON.stringify(legacy));
       localStorage.setItem(LEGACY_CLAIM_KEY, '1');
       setHasLegacySave(false);
     }
@@ -139,9 +159,15 @@ function normalizeHistory(history) {
   if (!isRecord(history)) return {};
   return Object.fromEntries(Object.entries(history).flatMap(([date, item]) => {
     if (!isRecord(item)) return [];
+    const reviewed = nonNegativeInteger(item.reviewed);
+    const reviewedQuestionIds = Array.isArray(item.reviewedQuestionIds)
+      ? [...new Set(item.reviewedQuestionIds.map(String).filter((id) => /^\d+$/u.test(id)))]
+      : [];
     return [[date, {
       ...item,
-      reviewed: nonNegativeInteger(item.reviewed),
+      reviewed,
+      attempts: nonNegativeInteger(item.attempts, reviewed),
+      reviewedQuestionIds,
       again: nonNegativeInteger(item.again),
       hard: nonNegativeInteger(item.hard),
       good: nonNegativeInteger(item.good),
@@ -249,8 +275,10 @@ export function useStudyState(username) {
   const storageKey = username ? userStorageKey(username) : STORAGE_KEY;
   const [state, setState] = useState(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
-      return migrateQuestionNumbers(normalizeStudyState(saved ? JSON.parse(saved) : null));
+      const saved = username
+        ? readFirstJson(userStorageKeys(username)).value
+        : readJson(storageKey);
+      return migrateQuestionNumbers(normalizeStudyState(saved));
     } catch {
       return defaultState();
     }

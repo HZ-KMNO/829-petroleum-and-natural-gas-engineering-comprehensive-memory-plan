@@ -111,6 +111,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .segmented-control { display: flex; padding: 3px; background: #e6eae8; border-radius: 6px; }
 .segmented-control button { border: 0; background: transparent; color: #66716d; padding: 6px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; }
 .segmented-control button.active { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.review-plan-summary { min-height: 26px; margin: -3px 0 14px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 11px; }
+.review-plan-summary span { font-weight: 700; color: var(--text); }
+.review-plan-summary strong { color: var(--accent-dark); font-size: 12px; }
+.review-plan-summary i { width: 1px; height: 11px; margin: 0 3px; background: var(--border-strong); }
+.review-plan-summary em { color: var(--amber); font-style: normal; }
 
 .review-surface {
   min-height: 390px;
@@ -178,7 +183,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .question-navigation button:disabled { opacity: .4; cursor: not-allowed; }
 .reveal-button { width: 100%; }
 .reveal-button:hover, .primary-button:hover { background: var(--accent-dark); }
-.grade-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+.grade-bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .grade-button {
   min-height: 58px;
   border: 1px solid var(--border);
@@ -196,8 +201,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .grade-button small { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); font-weight: 500; }
 .grade-again { color: var(--rose); background: var(--rose-soft); border-color: #efcfd3; }
 .grade-hard { color: var(--amber); background: var(--amber-soft); border-color: #f0d7ae; }
-.grade-good { color: var(--blue); background: var(--blue-soft); border-color: #cad9eb; }
-.grade-easy { color: var(--accent-dark); background: var(--accent-soft); border-color: #c7e5db; }
+.grade-good { color: var(--accent-dark); background: var(--accent-soft); border-color: #c7e5db; }
 .back-button { border: 0; background: transparent; padding: 6px 0; display: flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; }
 
 .completion-panel { min-height: 500px; display: flex; align-items: center; flex-direction: column; justify-content: center; text-align: center; }
@@ -410,7 +414,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .question-meta select { width: 64px; padding: 0 3px; }
   .review-surface { min-height: 350px; padding: 27px 19px; }
   .question-content { font-size: 15px; line-height: 1.85; }
-  .grade-bar { grid-template-columns: repeat(2, 1fr); }
+  .grade-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grade-button { min-width: 0; gap: 6px; }
   .library-controls { flex-direction: column; }
   .search-field { width: 100%; }
   .filter-tabs { overflow-x: auto; padding-bottom: 2px; }

@@ -1,7 +1,7 @@
 {
   "name": "829-memory",
   "private": true,
-  "version": "1.0.18",
+  "version": "1.0.21",
   "description": "829 石油与天然气工程综合主动回忆与间隔复习桌面应用",
   "author": "HZ-KMNO",
   "main": "electron/main.cjs",
@@ -15,16 +15,17 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "vite": "latest"
+    "@vitejs/plugin-react": "6.1.1",
+    "lucide-react": "1.37.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "ts-fsrs": "5.4.2",
+    "vite": "8.2.2"
   },
   "devDependencies": {
     "electron": "^44.0.0",
     "electron-builder": "^26.15.3",
-    "vitest": "latest"
+    "vitest": "4.1.11"
   },
   "build": {
     "appId": "cn.hzkmno.memory829",
@@ -43,7 +44,7 @@
       }
     ],
     "directories": {
-      "output": "desktop-app-v1.0.18"
+      "output": "desktop-app-v1.0.21"
     },
     "win": {
       "icon": "public/app-shortcut-icon-v3.ico",

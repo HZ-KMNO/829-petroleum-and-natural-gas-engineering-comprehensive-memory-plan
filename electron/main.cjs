@@ -6,11 +6,96 @@ const { pathToFileURL } = require('node:url');
 const APP_SCHEME = 'study829';
 const APP_ORIGIN = `${APP_SCHEME}://app`;
 const DIST_DIR = path.resolve(__dirname, '..', 'dist');
-const DEFAULT_USER_DATA_DIR = path.join(app.getPath('appData'), '829-memory');
-const USER_DATA_DIR = process.env.MEMORY829_USER_DATA_DIR || DEFAULT_USER_DATA_DIR;
+const STABLE_USER_DATA_DIR = path.join(app.getPath('home'), '829-memory-data');
 
-// Keep every installed and unpacked release on the same save directory even
-// if the product name or installation directory changes in a later version.
+function virtualizedUserDataDirs() {
+  const packagesDirectory = path.join(app.getPath('home'), 'AppData', 'Local', 'Packages');
+  try {
+    return fs.readdirSync(packagesDirectory, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => path.join(
+        packagesDirectory,
+        entry.name,
+        'LocalCache',
+        'Roaming',
+        '829-memory',
+      ));
+  } catch {
+    return [];
+  }
+}
+
+const LEGACY_USER_DATA_DIRS = [
+  path.join(app.getPath('appData'), '829-memory'),
+  path.join(app.getPath('appData'), '829石油与天然气工程综合记忆计划'),
+  path.join(app.getPath('appData'), '829-memory-plan'),
+  path.join(app.getPath('appData'), '829-memory-plan-updater'),
+  ...virtualizedUserDataDirs(),
+];
+
+function hasLocalSave(directory) {
+  const levelDb = path.join(directory, 'Local Storage', 'leveldb');
+  if (!fs.existsSync(levelDb)) return false;
+  try {
+    return fs.readdirSync(levelDb).some((name) => {
+      if (!/\.(ldb|log)$/i.test(name)) return false;
+      try {
+        const text = fs.readFileSync(path.join(levelDb, name), 'utf8');
+        return text.includes('829-memory-profiles-v1') || text.includes('829-memory-state-v1');
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
+
+function migrateLegacyUserData(targetDirectory) {
+  if (hasLocalSave(targetDirectory)) return;
+  const targetPath = path.resolve(targetDirectory).toLocaleLowerCase();
+  const sourceDirectory = LEGACY_USER_DATA_DIRS.find((candidate) => (
+    path.resolve(candidate).toLocaleLowerCase() !== targetPath && hasLocalSave(candidate)
+  ));
+  if (!sourceDirectory) return;
+
+  const excludedDirectories = new Set([
+    'blob_storage',
+    'Cache',
+    'Code Cache',
+    'DawnGraphiteCache',
+    'DawnWebGPUCache',
+    'GPUCache',
+    'Session Storage',
+    'Shared Dictionary',
+  ]);
+  const excludedFiles = new Set(['LOCK', 'lockfile', 'DevToolsActivePort']);
+
+  try {
+    fs.cpSync(sourceDirectory, targetDirectory, {
+      recursive: true,
+      force: true,
+      filter: (sourcePath) => {
+        const relativePath = path.relative(sourceDirectory, sourcePath);
+        const rootName = relativePath.split(path.sep)[0];
+        return !excludedDirectories.has(rootName) && !excludedFiles.has(path.basename(sourcePath));
+      },
+    });
+    fs.writeFileSync(path.join(targetDirectory, 'save-migration.json'), JSON.stringify({
+      migratedAt: new Date().toISOString(),
+      sourceDirectory,
+    }, null, 2));
+  } catch (error) {
+    console.error('Unable to migrate the existing 829 save:', error);
+  }
+}
+
+const USER_DATA_DIR = process.env.MEMORY829_USER_DATA_DIR || STABLE_USER_DATA_DIR;
+
+if (!process.env.MEMORY829_USER_DATA_DIR) migrateLegacyUserData(USER_DATA_DIR);
+
+// A directory below the user profile is stable even when Windows virtualizes
+// AppData for a process launched from an MSIX-packaged development tool.
 fs.mkdirSync(USER_DATA_DIR, { recursive: true });
 app.setPath('userData', USER_DATA_DIR);
 

@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Eye, Gauge, RotateCcw, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Eye, Gauge, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { QuestionContent } from '../components/QuestionContent';
 
 const grades = [
-  { id: 'again', label: '忘记', icon: RotateCcw },
-  { id: 'hard', label: '困难', icon: Gauge },
-  { id: 'good', label: '记得', icon: Check },
-  { id: 'easy', label: '熟练', icon: Sparkles },
+  { id: 'again', label: '不会', icon: RotateCcw },
+  { id: 'hard', label: '不熟', icon: Gauge },
+  { id: 'good', label: '熟练', icon: Check },
 ];
 
-export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPriority, priorities, todayReviewed, dailyTarget, onEditDailyTarget }) {
+export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade, onPriority, priorities, todayReviewed, dailyTarget, onEditDailyTarget }) {
   const [session, setSession] = useState(() => ({ items: queue, index: 0 }));
+  const sessionPlan = useRef(plan).current;
   const [revealed, setRevealed] = useState(false);
   const [answer, setAnswer] = useState('');
   const [mode, setMode] = useState('cloze');
@@ -34,7 +34,7 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
       }
       if (!isFocused && event.code === 'ArrowLeft') { event.preventDefault(); goPrevious(); }
       if (!isFocused && event.code === 'ArrowRight') { event.preventDefault(); goNext(); }
-      if (revealed && ['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(event.code)) {
+      if (revealed && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) {
         const grade = grades[Number(event.code.slice(-1)) - 1];
         if (grade) handleGrade(grade.id);
       }
@@ -56,11 +56,13 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
   const handleGrade = (grade) => {
     if (!active) return;
     onGrade(active.id, grade);
+    setRevealed(false);
+    setAnswer('');
     if (isFocused) {
       onClearFocus();
       return;
     }
-    setSession((current) => advanceReviewSession(current, active.id));
+    setSession((current) => advanceReviewSession(current, active.id, grade));
   };
 
   if (!active) {
@@ -130,6 +132,16 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
         {!isFocused && <span className="queue-position">{position} / {total}</span>}
       </div>
 
+      {!isFocused && sessionPlan && (
+        <div className="review-plan-summary">
+          <span>本轮安排</span>
+          <strong>{sessionPlan.dueCount}</strong> 题到期复习
+          <i />
+          <strong>{sessionPlan.newCount}</strong> 题新学
+          {sessionPlan.deferredDueCount > 0 && <><i /><em>{sessionPlan.deferredDueCount} 题顺延至下轮</em></>}
+        </div>
+      )}
+
       <article className="review-surface">
         <QuestionContent
           question={active}
@@ -174,10 +186,15 @@ export function ReviewPage({ queue, focusedQuestion, onClearFocus, onGrade, onPr
   );
 }
 
-export function advanceReviewSession(session, answeredId) {
+export function advanceReviewSession(session, answeredId, grade = 'good') {
   const answeredIndex = session.items.findIndex((question) => question.id === answeredId);
   if (answeredIndex < 0) return session;
-  const items = session.items.filter((_, itemIndex) => itemIndex !== answeredIndex);
+  const items = [...session.items];
+  const [answered] = items.splice(answeredIndex, 1);
+  if (grade === 'again') {
+    const relearnIndex = Math.min(answeredIndex + 3, items.length);
+    items.splice(relearnIndex, 0, answered);
+  }
   return {
     items,
     index: Math.min(session.index, Math.max(0, items.length - 1)),

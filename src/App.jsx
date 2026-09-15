@@ -6,7 +6,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
 import { AuthPage } from './pages/AuthPage';
 import { DailyGoalPage } from './pages/DailyGoalPage';
-import { buildTodayQueue, DAILY_QUESTION_LIMIT, daysBetween, gradeQuestion, toDateKey } from './scheduler';
+import { buildDailyPlan, DAILY_QUESTION_LIMIT, daysBetween, gradeQuestion, toDateKey } from './scheduler';
 import { useProfiles, useStudyState } from './storage';
 
 export default function App() {
@@ -42,12 +42,12 @@ function StudyWorkspace({ profile, onSwitchProfile }) {
   const todayKey = toDateKey();
   const priorities = state.priorities ?? {};
   const started = Object.keys(state.progress).length;
-  const todayReviewed = state.history[todayKey]?.reviewed ?? 0;
+  const todayReviewed = Number(state.history[todayKey]?.reviewed) || 0;
   const storedDailyTarget = state.dailyTargets?.[todayKey];
   const dailyTarget = Number.isInteger(storedDailyTarget) ? storedDailyTarget : null;
   const remainingToday = Math.max(0, (dailyTarget ?? 0) - todayReviewed);
-  const queue = useMemo(
-    () => buildTodayQueue(questions, state.progress, remainingToday, new Date(), priorities),
+  const dailyPlan = useMemo(
+    () => buildDailyPlan(questions, state.progress, remainingToday, new Date(), priorities),
     [priorities, questions, remainingToday, state.progress],
   );
 
@@ -64,8 +64,22 @@ function StudyWorkspace({ profile, onSwitchProfile }) {
     setState((current) => {
       const previous = current.progress[questionId] ?? {};
       const progress = { ...current.progress, [questionId]: gradeQuestion(previous, grade) };
-      const today = current.history[todayKey] ?? { reviewed: 0, again: 0, hard: 0, good: 0, easy: 0 };
+      const today = current.history[todayKey] ?? {
+        reviewed: 0,
+        attempts: 0,
+        reviewedQuestionIds: [],
+        again: 0,
+        hard: 0,
+        good: 0,
+        easy: 0,
+      };
+      const reviewedQuestionIds = Array.isArray(today.reviewedQuestionIds)
+        ? today.reviewedQuestionIds.map(String)
+        : [];
+      const questionKey = String(questionId);
+      const firstReviewToday = !reviewedQuestionIds.includes(questionKey);
       const reviewed = Number(today.reviewed);
+      const attempts = Number(today.attempts);
       const gradeCount = Number(today[grade]);
       return {
         ...current,
@@ -74,7 +88,11 @@ function StudyWorkspace({ profile, onSwitchProfile }) {
           ...current.history,
           [todayKey]: {
             ...today,
-            reviewed: (Number.isFinite(reviewed) ? reviewed : 0) + 1,
+            reviewed: (Number.isFinite(reviewed) ? reviewed : 0) + (firstReviewToday ? 1 : 0),
+            attempts: (Number.isFinite(attempts) ? attempts : 0) + 1,
+            reviewedQuestionIds: firstReviewToday
+              ? [...reviewedQuestionIds, questionKey]
+              : reviewedQuestionIds,
             [grade]: (Number.isFinite(gradeCount) ? gradeCount : 0) + 1,
           },
         },
@@ -127,7 +145,8 @@ function StudyWorkspace({ profile, onSwitchProfile }) {
       )}
       {view === 'today' && (focusedQuestion || (dailyTarget != null && !editingDailyTarget)) && (
         <ReviewPage
-          queue={queue}
+          queue={dailyPlan.queue}
+          plan={dailyPlan}
           focusedQuestion={focusedQuestion}
           onClearFocus={clearFocusedQuestion}
           onGrade={handleGrade}
