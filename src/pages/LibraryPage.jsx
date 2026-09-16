@@ -1,6 +1,7 @@
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { QuestionContent } from '../components/QuestionContent';
+import { questionTypeLabel, questionTypeOptions } from '../questionTypes';
 
 const filters = [
   ['all', '全部'],
@@ -19,13 +20,16 @@ function plainText(question) {
 export function LibraryPage({ questions, progress, priorities, onOpenQuestion, mistakesOnly = false, viewState, onViewStateChange }) {
   const [localSearch, setLocalSearch] = useState('');
   const [localFilter, setLocalFilter] = useState(mistakesOnly ? 'mistakes' : 'all');
+  const [localCategory, setLocalCategory] = useState('all');
   const search = viewState?.search ?? localSearch;
   const filter = viewState?.filter ?? localFilter;
+  const category = viewState?.category ?? localCategory;
   const updateViewState = (next) => {
     if (onViewStateChange) onViewStateChange(next);
     else {
       if (next.search !== undefined) setLocalSearch(next.search);
       if (next.filter !== undefined) setLocalFilter(next.filter);
+      if (next.category !== undefined) setLocalCategory(next.category);
     }
   };
 
@@ -37,10 +41,11 @@ export function LibraryPage({ questions, progress, priorities, onOpenQuestion, m
       if (filter === 'new' && item) return false;
       if (filter === 'learning' && (!item || item.mastered)) return false;
       if (filter === 'mastered' && !item?.mastered) return false;
+      if (category !== 'all' && !question.knowledgeTypes?.includes(category)) return false;
       if (query && !plainText(question).toLowerCase().includes(query) && !String(question.id).includes(query)) return false;
       return true;
     });
-  }, [filter, mistakesOnly, progress, questions, search]);
+  }, [category, filter, mistakesOnly, progress, questions, search]);
 
   return (
     <section className="page library-page">
@@ -54,11 +59,20 @@ export function LibraryPage({ questions, progress, priorities, onOpenQuestion, m
           <Search size={19} />
           <input value={search} onChange={(event) => updateViewState({ search: event.target.value })} placeholder="搜索题目或编号" />
         </label>
+        <div className="library-filter-group">
+          <label className="category-filter">
+            <span>知识类型</span>
+            <select value={category} onChange={(event) => updateViewState({ category: event.target.value })}>
+              <option value="all">全部类型</option>
+              {questionTypeOptions.map(([id, label]) => <option value={id} key={id}>{label}</option>)}
+            </select>
+          </label>
         {!mistakesOnly && (
           <div className="filter-tabs"><SlidersHorizontal size={18} />{filters.map(([id, label]) => (
             <button className={filter === id ? 'active' : ''} onClick={() => updateViewState({ filter: id })} key={id}>{label}</button>
           ))}</div>
         )}
+        </div>
       </div>
 
       <div className="question-list">
@@ -68,7 +82,7 @@ export function LibraryPage({ questions, progress, priorities, onOpenQuestion, m
           return (
             <button className="question-row" onClick={() => onOpenQuestion(question)} key={question.id}>
               <span className="row-number"><i>{priorities[question.id] ?? 'B'}</i>{String(question.id).padStart(3, '0')}</span>
-              <div className="row-content"><div className="row-chapter">第 {question.chapter?.number ?? 0} 章 · {question.chapter?.title ?? '综合题'}</div><QuestionContent question={question} compact /></div>
+              <div className="row-content"><div className="row-chapter">第 {question.chapter?.number ?? 0} 章 · {question.chapter?.title ?? '综合题'} · {questionTypeLabel(question.category)}</div><QuestionContent question={question} compact /></div>
               <span className={`status-text status-${status}`}>{status}</span>
             </button>
           );

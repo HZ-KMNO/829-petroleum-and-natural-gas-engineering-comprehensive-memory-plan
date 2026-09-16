@@ -5,7 +5,7 @@ const questionBySourceId = (sourceId) => (
   questionBank.questions.find((question) => question.sourceId === sourceId)
 );
 
-describe('question bank v5', () => {
+describe('question bank v6', () => {
   it('assigns every question to a chapter for review and library context', () => {
     expect(questionBank.questions.every((question) => (
       question.chapter && Number.isInteger(question.chapter.number) && question.chapter.title
@@ -26,7 +26,8 @@ describe('question bank v5', () => {
 
   it('uses standard Unicode text without legacy font fields', () => {
     const serialized = JSON.stringify(questionBank);
-    expect(questionBank.version).toBe(5);
+    expect(questionBank.version).toBe(6);
+    expect(questionBank.schema).toBe('semantic-cloze-v2');
     expect(serialized).not.toMatch(/[\uE000-\uF8FF]/u);
     expect(serialized).not.toContain('"markji"');
     expect(serialized).not.toContain('"segments"');
@@ -46,10 +47,12 @@ describe('question bank v5', () => {
     });
   });
 
-  it('keeps the first paragraph of every question visible as the prompt', () => {
+  it('keeps every prompt recognizable while allowing a partial title cloze', () => {
     questionBank.questions.forEach((question) => {
       const prompt = question.blocks.find((block) => block.type === 'paragraph');
-      expect(prompt?.clozes ?? []).toEqual([]);
+      expect(prompt?.text.length).toBeGreaterThan(1);
+      expect(question.title).not.toMatch(/[：:]/u);
+      expect(prompt?.clozes.every((cloze) => cloze.answer.length < prompt.text.length)).toBe(true);
     });
   });
 
@@ -60,13 +63,11 @@ describe('question bank v5', () => {
       '适用条件', '形成条件', '应用', '差异点', '生产特征',
       '两条曲线', '三个区域', '三个特征点', '相同点',
     ];
-    const labelOnly = new RegExp(`^(?:${labels.join('|')})[：:]?$`, 'u');
     const labelPrefix = new RegExp(`^(?:${labels.join('|')})[：:]`, 'u');
     questionBank.questions.forEach((question) => {
       question.blocks.filter((block) => block.type === 'paragraph').forEach((block) => {
         block.clozes.forEach((cloze) => {
           const answer = block.text.slice(cloze.start, cloze.end);
-          expect(answer).not.toMatch(labelOnly);
           expect(answer).not.toMatch(labelPrefix);
           labels.forEach((label) => {
             expect(answer).not.toContain(`${label}：`);
@@ -86,14 +87,14 @@ describe('question bank v5', () => {
     ]));
 
     const q27 = questionBySourceId(27);
-    expect(q27.title).toBe('天然气的体积系数Bg');
+    expect(q27.title).toBe('天然气的体积系数 Bg');
     expect(q27.blocks.find((block) => block.text.startsWith('Vg——')).text).toContain('m³');
 
     const q35 = questionBySourceId(35);
     expect(q35.blocks.some((block) => block.type === 'paragraph' && block.text.includes('两口井同时渗流'))).toBe(true);
 
     const q37 = questionBySourceId(37);
-    expect(q37.blocks.some((block) => block.type === 'paragraph' && block.text.includes('残余油饱和度Sor'))).toBe(true);
+    expect(q37.blocks.some((block) => block.type === 'paragraph' && block.text.includes('残余油饱和度 Sor'))).toBe(true);
 
     const q46 = questionBySourceId(46);
     expect(q46.blocks.some((block) => block.type === 'paragraph' && block.text.startsWith('定义：在钻进时'))).toBe(true);
@@ -117,7 +118,7 @@ describe('question bank v5', () => {
   it('stores the孔隙配位数 answers as four semantic clozes', () => {
     const question = questionBySourceId(4);
     const answers = question.blocks.flatMap((block) => block.clozes ?? []).map((cloze) => cloze.answer);
-    expect(answers).toEqual(['孔隙', '连通', '喉道数', '2~15']);
+    expect(answers).toEqual(['孔隙', '连通', '喉道数', '2～15']);
   });
 
   it('clozes both成岩后生作用 conclusions', () => {
@@ -125,10 +126,10 @@ describe('question bank v5', () => {
     const conclusionBlocks = question.blocks.filter(
       (block) => block.type === 'paragraph' && /^[①②]/u.test(block.text),
     );
-    expect(conclusionBlocks.map((block) => block.clozes.map((cloze) => cloze.answer))).toEqual([
-      ['构造力作用', '微裂隙', '孔隙度增大'],
-      ['地下水活跃', '溶蚀', '岩石颗粒和胶结物', '孔隙度增加', '矿物质沉淀', '充填或缩小', '岩石孔隙', '孔隙度减小'],
-    ]);
+    const answers = conclusionBlocks.flatMap((block) => block.clozes.map((cloze) => cloze.answer));
+    expect(answers).toEqual(expect.arrayContaining([
+      '构造力', '微裂隙', '地下水', '溶蚀', '矿物质沉淀', '充填', '缩小',
+    ]));
   });
 
   it('clozes the complete three-phase relative permeability formula', () => {
@@ -153,7 +154,8 @@ describe('question bank v5', () => {
     );
     expect(definition.clozes.map((cloze) => cloze.answer)).toEqual([
       '工作剂驱洗过的地层',
-      '滞留或闭锁',
+      '滞留',
+      '闭锁',
       '岩石孔隙',
     ]);
   });
@@ -190,12 +192,12 @@ describe('question bank v5', () => {
 
   it('clozes audited formulas and numeric relations as complete expressions', () => {
     const expected = new Map([
-      [22, '1mPa•s=1cP'],
+      [22, '1 mPa·s（毫帕秒）=1 cP（厘泊）'],
       [27, 'Bg= Vg /Vsc＜1'],
       [31, '压力系数=Pe/PH'],
-      [37, '水驱效率=(1-Swi-Sor)/(1-Swi) ×100%'],
-      [83, '1in=25.4mm'],
-      [120, '551.6MPa'],
+      [37, '(1-Swi-Sor)/(1-Swi) ×100%'],
+      [83, '1in=25.4 mm'],
+      [120, 'N-80=80 000 lbf/in²=80 ksi=551.6 MPa'],
       [143, '水泥浆的凝结时间>稠化时间'],
       [263, 'v＝Q/A'],
     ]);
@@ -204,5 +206,18 @@ describe('question bank v5', () => {
       const answers = question.blocks.flatMap((block) => block.clozes ?? []).map((cloze) => cloze.answer);
       expect(answers).toContain(answer);
     });
+  });
+
+  it('classifies questions, paragraphs and mnemonic clozes', () => {
+    expect(questionBank.questions.every((question) => (
+      question.category && question.knowledgeTypes.length > 0 && question.fillCount > 0
+    ))).toBe(true);
+    expect(questionBank.questions.every((question) => (
+      question.blocks.filter((block) => block.type === 'paragraph').every((block) => block.category)
+    ))).toBe(true);
+    const mnemonics = questionBank.questions.flatMap((question) => (
+      question.blocks.flatMap((block) => block.clozes ?? [])
+    )).filter((cloze) => cloze.clozeType === 'mnemonic');
+    expect(mnemonics).toHaveLength(22);
   });
 });

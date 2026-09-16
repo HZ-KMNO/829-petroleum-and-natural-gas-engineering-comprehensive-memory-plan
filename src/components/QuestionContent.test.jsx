@@ -39,4 +39,25 @@ describe('splitParagraph', () => {
     expect(markup).toContain('aria-label="显示公式图片"');
     expect(markup).toContain('<svg');
   });
+
+  it('sizes a semantic blank from the hidden answer text itself', () => {
+    const markup = renderToStaticMarkup(
+      <QuestionContent
+        question={{
+          id: 1,
+          blocks: [{
+            type: 'paragraph',
+            text: '口诀内容',
+            clozes: [{ start: 0, end: 4, answer: '口诀内容', clozeType: 'mnemonic' }],
+          }],
+        }}
+        revealOnClick
+      />,
+    );
+
+    expect(markup).toContain('data-cloze-type="mnemonic"');
+    expect(markup).toContain('answer-blank-sizer');
+    expect(markup).toContain('口诀内容');
+    expect(markup).not.toContain('--blank-width');
+  });
 });

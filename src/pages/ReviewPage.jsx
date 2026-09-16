@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Eye, Gauge, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { QuestionContent } from '../components/QuestionContent';
+import { questionTypeLabel } from '../questionTypes';
 
 const grades = [
   { id: 'again', label: '不会', icon: RotateCcw },
@@ -114,7 +115,7 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
       <div className="review-toolbar">
         <div className="question-meta">
           <span className="question-number">第 {active.id} 题</span>
-          <span className="chapter-label">第 {active.chapter?.number ?? 0} 章 · {active.chapter?.title ?? '综合题'}</span>
+          <span className="chapter-label">第 {active.chapter?.number ?? 0} 章 · {active.chapter?.title ?? '综合题'} · {questionTypeLabel(active.category)}</span>
           <select
             aria-label="题目级别"
             value={priorities[active.id] ?? 'B'}

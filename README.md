@@ -5,16 +5,18 @@
 # 829 记忆计划
 
 「829 记忆计划」是面向《石油与天然气工程综合》备考的 Windows 桌面记忆工具。
-它将 369 道题、3172 个人工设计的挖空和 36 个公式或示意图片组织为主动回忆、
+它将 369 道题、3301 个人工设计的挖空和 36 个公式或示意图片组织为主动回忆、
 间隔复习和错题再练流程。
 
-> 当前版本为 **1.0.21**。项目只发布 Windows x64 安装版桌面应用，
+> 当前版本为 **1.1.0**。项目只发布 Windows x64 安装版桌面应用，
 > 不发布网页版或 Portable 版。
 
 ## 主要功能
 
 - 人工挖空：题库的每个答案范围都来自人工 Excel 母版，不依赖 Markji 私用字符或特殊字体。
-- 等长遮盖：挖空条按原答案的字符数呈现，保留原题的排版和答案长度线索。
+- 等长遮盖：遮盖条使用原答案的实际排版宽度，中文、英文、数字和公式都与原文等长。
+- 口诀回忆：记忆口诀作为 `mnemonic` 语义空保留，不再被当作乱码或固定提示删除。
+- 知识分类：按定义、分类、条件、机理、作用、结果、公式、数值、口诀、条目和例子筛选。
 - 逐空显示：挖空模式下可单独点击某个遮盖条，不必一次显示整题答案。
 - 图片回忆：带公式或图示的图片块同样先遮盖，点击后才显示。
 - 双练习模式：可在「挖空」和「整题」之间切换，并可在答题前写下自己的答案骨架。
@@ -60,26 +62,26 @@
 
 ## 题库结构
 
-运行时题库位于 `public/data/questions.json`，当前结构版本为 v5。
+运行时题库位于 `public/data/questions.json`，当前结构版本为 v6。
 
 - `id`：应用中显示的连续题号，当前为 1–369。
 - `sourceId`：人工 Excel 中的原始题号，用于后续教材校对，不与存档题号耦合。
 - `chapter`：章号和章节名称。
+- `category` / `knowledgeTypes`：题目的主知识类型及全部知识类型。
 - `blocks`：按原题顺序保存正文、图片、分隔线和空行。
-- `clozes`：正文块内的字符起止位置，答案本身仍是标准 Unicode 文本。
+- `clozes`：正文块内的字符起止位置，并标记 `keyword`、`formula`、`value` 或 `mnemonic`。
 
 题库不再把空白写成固定长度下划线，也不用私用区字符代表公式。
 因此题目文字可正常复制，挖空、搜索、导出和存档迁移使用同一份结构化数据。
 
 ## 人工维护题库
 
-题库编辑母版是仓库根目录的
-`829题库-人工挖空模板-2026-09-11.xlsx`。「手动挖空版」中使用双花括号标记完整答案：
+题库编辑母版是仓库根目录的 `829题库.xlsx`。「手动挖空版」中使用半角方括号标记完整答案：
 
 ```text
 孔隙与喉道直径的比值
 改为
-{{孔隙}}与{{喉道}}{{直径}}的比值
+[孔隙]与[喉道][直径]的比值
 ```
 
 修改后导入：
@@ -87,6 +89,7 @@
 ```powershell
 py -3 -m pip install openpyxl
 py -3 tools/import_manual_questions.py
+py -3 tools/audit_question_bank.py
 pnpm test
 ```
 
@@ -96,8 +99,8 @@ pnpm test
 py -3 tools/export_question_bank_xlsx.py
 ```
 
-导入器会检查题数、图片占位、花括号配对、空答案和连续题号；
-删除重复题后会保留 `sourceId`，再为应用生成连续 `id`。
+导入器会逐题核对 Excel 与 JSON 的空数、图片占位、方括号配对、空答案、
+知识类型和连续题号；删除重复题后保留 `sourceId`，再为应用生成连续 `id`。
 
 ## 安装
 
@@ -138,7 +141,7 @@ pnpm desktop:build
 当前构建产物位于：
 
 ```text
-desktop-app-v1.0.21/829-memory-plan-1.0.21-setup.exe
+desktop-app-v1.1.0/829-memory-plan-1.1.0-setup.exe
 ```
 
 `desktop-app-v*/` 是本地生成目录，不提交到 Git。对外发布安装包时应使用 GitHub Releases。
@@ -150,7 +153,7 @@ desktop-app-v1.0.21/829-memory-plan-1.0.21-setup.exe
 ├─ assets/app-icon.png            # README 项目标志
 ├─ electron/main.cjs              # Electron 主进程、资源协议和固定存档路径
 ├─ public/
-│  ├─ data/questions.json       # v5 结构化题库
+│  ├─ data/questions.json       # v6 语义挖空题库
 │  ├─ media/                    # 公式和示意图片
 │  └─ app-icon.*                # 应用和 Windows 快捷方式图标
 ├─ src/
@@ -162,8 +165,10 @@ desktop-app-v1.0.21/829-memory-plan-1.0.21-setup.exe
 ├─ tools/
 │  ├─ export_question_bank_xlsx.py
 │  ├─ import_manual_questions.py
+│  ├─ prepare_question_bank_110.py
+│  ├─ audit_question_bank.py
 │  └─ repair_local_save.mjs
-├─ 829题库-人工挖空模板-2026-09-11.xlsx
+├─ 829题库.xlsx                  # 人工维护权威源
 └─ package.json
 ```
 

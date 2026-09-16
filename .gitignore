@@ -23,6 +23,8 @@ work/
 教材-OCR.txt
 source/*.docx
 source/questions.pre-dedup-*.json
+专业课资料/
+__pycache__/
 
 # Local smoke-test, OCR and save-migration artifacts
 /.ocr-pages/

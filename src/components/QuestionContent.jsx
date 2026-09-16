@@ -10,6 +10,7 @@ export function splitParagraph(text, clozes = []) {
       kind: 'fill',
       text: text.slice(cloze.start, cloze.end),
       clozeIndex,
+      clozeType: cloze.clozeType ?? 'keyword',
     });
     cursor = cloze.end;
   });
@@ -21,28 +22,24 @@ function TextPart({ part, revealed, revealOnClick, onReveal }) {
   if (part.kind !== 'fill') return part.text;
   if (revealed) return <span className="answer-fill">{part.text}</span>;
 
-  // Keep the recall bar the same visual length as the hidden answer.  Chinese
-  // characters and Latin symbols are rendered in an em-sized text run, so
-  // using the actual code-point count avoids the old fixed/minimum bar that
-  // made short answers look too long and long answers look truncated.
-  const width = Math.max(1, Array.from(part.text).length);
+  const className = `answer-blank answer-blank-${part.clozeType}`;
   if (revealOnClick) {
     return (
       <button
         type="button"
-        className="answer-blank is-interactive"
-        style={{ '--blank-width': `${width}em` }}
+        className={`${className} is-interactive`}
+        data-cloze-type={part.clozeType}
         aria-label="显示此处答案"
         onClick={onReveal}
-      />
+      ><span className="answer-blank-sizer" aria-hidden="true">{part.text}</span></button>
     );
   }
   return (
     <span
-      className="answer-blank"
-      style={{ '--blank-width': `${width}em` }}
+      className={className}
+      data-cloze-type={part.clozeType}
       aria-label="待回忆内容"
-    />
+    ><span className="answer-blank-sizer" aria-hidden="true">{part.text}</span></span>
   );
 }
 

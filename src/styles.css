@@ -132,7 +132,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .answer-fill { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; font-weight: inherit; }
 .answer-blank {
   display: inline-block;
-  width: min(var(--blank-width), 100%);
+  width: auto;
   max-width: 100%;
   min-width: 0;
   height: 1.15em;
@@ -140,6 +140,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   border-bottom: 2px solid var(--accent);
   background: repeating-linear-gradient(90deg, transparent 0, transparent 7px, rgba(20,125,105,.06) 7px, rgba(20,125,105,.06) 8px);
 }
+.answer-blank-sizer { visibility: hidden; white-space: pre; }
+.answer-blank-mnemonic { border-bottom-style: dashed; }
 .answer-blank + .answer-blank { margin-left: .35em; }
 .answer-blank.is-interactive { padding: 0; border: 0; border-bottom: 2px solid var(--accent); border-radius: 0; cursor: pointer; }
 .answer-blank.is-interactive:hover { background-color: var(--accent-soft); }
@@ -235,6 +237,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .result-count strong { font-size: 28px; }
 .result-count span { color: var(--muted); font-size: 12px; }
 .library-controls { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+.library-filter-group { display: flex; align-items: center; gap: 12px; }
+.category-filter { height: 36px; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.category-filter select { height: 34px; min-width: 104px; border: 1px solid var(--border-strong); border-radius: 5px; padding: 0 8px; background: #fff; color: var(--text); font: inherit; }
 .search-field { width: min(360px, 45%); height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 13px; border: 1px solid var(--border-strong); background: #fff; border-radius: 6px; color: var(--muted); }
 .search-field input { border: 0; outline: 0; background: transparent; min-width: 0; flex: 1; font-size: 13px; }
 .filter-tabs { display: flex; align-items: center; gap: 3px; color: var(--muted); }
@@ -417,6 +422,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .grade-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .grade-button { min-width: 0; gap: 6px; }
   .library-controls { flex-direction: column; }
+  .library-filter-group { align-items: stretch; flex-direction: column; gap: 8px; }
+  .category-filter { justify-content: space-between; }
   .search-field { width: 100%; }
   .filter-tabs { overflow-x: auto; padding-bottom: 2px; }
   .question-row { grid-template-columns: 42px minmax(0,1fr); gap: 9px; }

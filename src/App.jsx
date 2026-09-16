@@ -24,8 +24,8 @@ function StudyWorkspace({ profile, onSwitchProfile }) {
   const [view, setView] = useState('today');
   const [focusedQuestion, setFocusedQuestion] = useState(null);
   const [focusedReturnView, setFocusedReturnView] = useState('library');
-  const [libraryViewState, setLibraryViewState] = useState({ search: '', filter: 'all' });
-  const [mistakesViewState, setMistakesViewState] = useState({ search: '', filter: 'mistakes' });
+  const [libraryViewState, setLibraryViewState] = useState({ search: '', filter: 'all', category: 'all' });
+  const [mistakesViewState, setMistakesViewState] = useState({ search: '', filter: 'mistakes', category: 'all' });
   const [editingDailyTarget, setEditingDailyTarget] = useState(false);
   const [state, setState] = useStudyState(username);
 

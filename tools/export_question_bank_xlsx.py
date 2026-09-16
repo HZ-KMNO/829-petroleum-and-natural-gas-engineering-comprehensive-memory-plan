@@ -12,7 +12,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "public" / "data" / "questions.json"
-OUTPUT = ROOT / f"829题库-人工挖空模板-{date.today().isoformat()}.xlsx"
+OUTPUT = ROOT / f"829题库-空白审核模板-{date.today().isoformat()}.xlsx"
 
 HEADER_FILL = PatternFill("solid", fgColor="176B5B")
 HEADER_FONT = Font(color="FFFFFF", bold=True)
@@ -103,10 +103,10 @@ def build_workbook(data):
     guide["A1"].font = Font(size=18, bold=True, color="17332D")
     guide.merge_cells("A1:B1")
     instructions = [
-        ("题库规模", f"{len(data['questions'])} 道当前有效题目；题号 227 为历史重复题，已合并到第 42 题。"),
+        ("题库规模", f"{len(data['questions'])} 道当前有效题目；应用题号连续，sourceId 保留教材源题号。"),
         ("当前状态", "本文件没有预设任何挖空。“题目原文”和“手动挖空版”起始内容完全一致。"),
         ("主要编辑位置", "在“逐题人工挖空”表的“手动挖空版”列中编辑。"),
-        ("标记方法", "把需要隐藏的完整答案包在双花括号中，例如：孔隙与喉道直径的比值。可标为 {{孔隙}}与{{喉道}}{{直径}}的比值。"),
+        ("标记方法", "把需要隐藏的完整答案放在半角方括号中，例如：孔隙与喉道直径的比值。可标为 [孔隙]与[喉道][直径]的比值。"),
         ("语义要求", "一个花括号对应一个完整答案；不要只包半个词，也不要把整句全部包住。题目提示、作用：、定义：、意义：、分类：等提问标签保持可见。"),
         ("文字纠错", "可以直接在“手动挖空版”中修改错字，但请保留原有段落换行和图片占位行。"),
         ("图片题", "[图片：路径] 表示公式或示意图，保持占位行不变；可在“图片索引”表查看全部图片预览。"),
@@ -126,6 +126,7 @@ def build_workbook(data):
     overview.append([
         "题号", "章", "章节名称", "题目提示", "题目原文（勿改）", "手动挖空版（在此编辑）",
         "审核状态", "备注", "段落数", "图片数",
+        "知识类型",
     ])
     for question in data["questions"]:
         chapter = question.get("chapter", {})
@@ -135,9 +136,10 @@ def build_workbook(data):
         overview.append([
             question["id"], chapter.get("number", 0), chapter.get("title", ""), question.get("title", ""),
             plain_text, plain_text, "未审核", "", paragraph_count, image_count,
+            "、".join(question.get("knowledgeTypes", [])),
         ])
     style_header(overview)
-    set_widths(overview, {"A": 8, "B": 6, "C": 24, "D": 40, "E": 72, "F": 72, "G": 12, "H": 28, "I": 10, "J": 10})
+    set_widths(overview, {"A": 8, "B": 6, "C": 24, "D": 40, "E": 72, "F": 72, "G": 12, "H": 28, "I": 10, "J": 10, "K": 24})
     overview.sheet_view.zoomScale = 75
     for row in overview.iter_rows(min_row=2):
         for cell in row:
@@ -154,6 +156,7 @@ def build_workbook(data):
     details.append([
         "题号", "章", "章节名称", "块序号", "块类型", "原始内容（勿改）", "手动挖空内容",
         "图片路径", "审核状态", "备注",
+        "知识类型",
     ])
     type_labels = {"paragraph": "正文", "image": "图片", "separator": "分隔线", "spacer": "空行"}
     for question in data["questions"]:
@@ -164,9 +167,10 @@ def build_workbook(data):
                 question["id"], chapter.get("number", 0), chapter.get("title", ""), block_index,
                 type_labels.get(block.get("type"), block.get("type", "")), content, content,
                 block.get("src", "") if block.get("type") == "image" else "", "未审核", "",
+                block.get("category", ""),
             ])
     style_header(details)
-    set_widths(details, {"A": 8, "B": 6, "C": 24, "D": 10, "E": 10, "F": 70, "G": 70, "H": 38, "I": 12, "J": 28})
+    set_widths(details, {"A": 8, "B": 6, "C": 24, "D": 10, "E": 10, "F": 70, "G": 70, "H": 38, "I": 12, "J": 28, "K": 18})
     details.sheet_view.zoomScale = 80
     for row in details.iter_rows(min_row=2):
         for cell in row:
