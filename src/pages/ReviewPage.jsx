@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Eye, Gauge, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { Check, ChevronLeft, Eye, Gauge, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { QuestionContent } from '../components/QuestionContent';
 import { questionTypeLabel } from '../questionTypes';
 
@@ -23,34 +23,6 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
     setRevealed(false);
   }, [active?.id]);
 
-  useEffect(() => {
-    const handler = (event) => {
-      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
-      if (event.code === 'Space' && active && !revealed) {
-        event.preventDefault();
-        setRevealed(true);
-      }
-      if (!isFocused && event.code === 'ArrowLeft') { event.preventDefault(); goPrevious(); }
-      if (!isFocused && event.code === 'ArrowRight') { event.preventDefault(); goNext(); }
-      if (revealed && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) {
-        const grade = grades[Number(event.code.slice(-1)) - 1];
-        if (grade) handleGrade(grade.id);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  });
-
-  const goPrevious = () => {
-    if (isFocused) return;
-    setSession((current) => ({ ...current, index: Math.max(0, current.index - 1) }));
-  };
-
-  const goNext = () => {
-    if (isFocused) return;
-    setSession((current) => ({ ...current, index: Math.min(current.items.length - 1, current.index + 1) }));
-  };
-
   const handleGrade = (grade) => {
     if (!active) return;
     onGrade(active.id, grade);
@@ -62,15 +34,32 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
     setSession((current) => advanceReviewSession(current, active.id, grade));
   };
 
+  // Space reveals the answer, then 1/2/3 grade it. The shortcut is printed on the
+  // button itself, so the whole flow is reachable without leaving the keyboard.
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+      if (!active || event.repeat) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (!revealed) setRevealed(true);
+        return;
+      }
+      if (revealed && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) {
+        const grade = grades[Number(event.code.slice(-1)) - 1];
+        if (grade) handleGrade(grade.id);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
   if (!active) {
     return (
       <section className="page review-page">
-        <header className="page-header">
-          <div><p className="date-label">今天</p><h1>今日任务已完成</h1></div>
-        </header>
         <div className="completion-panel">
           <div className="completion-icon"><Check size={34} /></div>
-          <h2>今天的记忆已经加固</h2>
+          <h2>今日任务已完成</h2>
           <p>已完成 {todayReviewed} 次复习，明天继续按计划推进。</p>
           <div className="completion-actions">
             <button className="primary-button" onClick={() => window.location.reload()}>检查最新任务</button>
@@ -86,32 +75,15 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
 
   return (
     <section className="page review-page">
-      <header className="page-header review-header">
-        <div>
-          {isFocused ? (
-            <button className="back-button" onClick={onClearFocus}><ChevronLeft size={18} />返回题库</button>
-          ) : (
-            <><p className="date-label">今日复习</p><h1>{todayReviewed === 0 ? '从第一题开始' : '继续保持节奏'}</h1></>
-          )}
-        </div>
-        <div className="header-metrics">
-          <span><strong>{todayReviewed}</strong><small>今日完成</small></span>
-          <button className="daily-target-metric" type="button" onClick={onEditDailyTarget} title="调整今日题量">
-            <strong>{dailyTarget}</strong><small>今日目标</small>
-          </button>
-        </div>
-      </header>
-
-      {!isFocused && (
-        <div className="session-progress" aria-label={`本次进度 ${position}/${total}`}>
-          <span style={{ width: `${Math.round(((position - 1) / total) * 100)}%` }} />
-        </div>
-      )}
-
-      <div className="review-toolbar">
-        <div className="question-meta">
-          <span className="question-number">第 {active.id} 题</span>
-          <span className="chapter-label">第 {active.chapter?.number ?? 0} 章 · {active.chapter?.title ?? '综合题'} · {questionTypeLabel(active.category)}</span>
+      <header className="review-header">
+        {isFocused && (
+          <button className="back-button" onClick={onClearFocus}><ChevronLeft size={18} />返回题库</button>
+        )}
+        <div className="review-meta">
+          <h1 className="question-number">第 {active.id} 题</h1>
+          <span className="chapter-label">
+            第 {active.chapter?.number ?? 0} 章 · {active.chapter?.title ?? '综合题'} · {questionTypeLabel(active.category)}
+          </span>
           <select
             aria-label="题目级别"
             value={priorities[active.id] ?? 'B'}
@@ -122,20 +94,20 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
             <option value="C">C 了解</option>
           </select>
         </div>
-        <div className="segmented-control" aria-label="练习模式">
-          <button className={mode === 'cloze' ? 'active' : ''} onClick={() => setMode('cloze')}>挖空</button>
-          <button className={mode === 'recall' ? 'active' : ''} onClick={() => setMode('recall')}>整题</button>
+        <div className="review-meta-end">
+          {!isFocused && (
+            <span className="queue-position" title="本次队列进度">{position} / {total}</span>
+          )}
+          <div className="segmented-control" aria-label="练习模式">
+            <button className={mode === 'cloze' ? 'active' : ''} onClick={() => setMode('cloze')}>挖空</button>
+            <button className={mode === 'recall' ? 'active' : ''} onClick={() => setMode('recall')}>整题</button>
+          </div>
         </div>
-        {!isFocused && <span className="queue-position">{position} / {total}</span>}
-      </div>
+      </header>
 
-      {!isFocused && sessionPlan && (
-        <div className="review-plan-summary">
-          <span>本轮安排</span>
-          <strong>{sessionPlan.dueCount}</strong> 题到期复习
-          <i />
-          <strong>{sessionPlan.newCount}</strong> 题新学
-          {sessionPlan.deferredDueCount > 0 && <><i /><em>{sessionPlan.deferredDueCount} 题顺延至下轮</em></>}
+      {!isFocused && (
+        <div className="session-progress" aria-label={`本次进度 ${position}/${total}`}>
+          <span style={{ width: `${Math.round(((position - 1) / total) * 100)}%` }} />
         </div>
       )}
 
@@ -148,24 +120,28 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
         />
       </article>
 
-      {!isFocused && (
-        <div className="question-navigation" aria-label="题目切换">
-          <button type="button" onClick={goPrevious} disabled={index === 0} title="上一题"><ChevronLeft size={18} />上一题</button>
-          <button type="button" onClick={goNext} disabled={index >= sessionQueue.length - 1} title="下一题">下一题<ChevronRight size={18} /></button>
-        </div>
-      )}
-
       {!revealed ? (
-        <button className="reveal-button" onClick={() => setRevealed(true)}><Eye size={20} />核对答案</button>
+        <button className="reveal-button" onClick={() => setRevealed(true)}>
+          <Eye size={20} />核对答案
+          <kbd>空格</kbd>
+        </button>
       ) : (
         <div className="grade-bar">
-          {grades.map(({ id, label, icon: Icon }) => (
+          {grades.map(({ id, label, icon: Icon }, gradeIndex) => (
             <button className={`grade-button grade-${id}`} onClick={() => handleGrade(id)} key={id}>
               <Icon size={19} />
               <span>{label}</span>
+              <kbd>{gradeIndex + 1}</kbd>
             </button>
           ))}
         </div>
+      )}
+
+      {!isFocused && sessionPlan && (
+        <p className="review-plan-summary">
+          本轮 {sessionPlan.dueCount} 题到期复习 · {sessionPlan.newCount} 题新学
+          {sessionPlan.deferredDueCount > 0 && <em> · {sessionPlan.deferredDueCount} 题顺延</em>}
+        </p>
       )}
     </section>
   );

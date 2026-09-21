@@ -36,12 +36,36 @@ describe('review surface', () => {
     expect(markup).not.toContain('答题骨架');
   });
 
+  it('offers no previous/next buttons so grading is the only way forward', () => {
+    const markup = renderReview();
+
+    expect(markup).not.toContain('上一题');
+    expect(markup).not.toContain('下一题');
+    expect(markup).not.toContain('question-navigation');
+  });
+
   it('keeps the whole screen dedicated to the question and the grade buttons', () => {
     const markup = renderReview();
 
     expect(markup).toContain('review-surface');
     expect(markup).toContain('核对答案');
     expect(markup).toContain('question-content');
+  });
+
+  it('prints the keyboard shortcut on the action buttons', () => {
+    const markup = renderReview();
+
+    expect(markup).toContain('<kbd>空格</kbd>');
+  });
+
+  it('shows the question identity once, in the single header row', () => {
+    const markup = renderReview();
+
+    expect(markup).toContain('question-number');
+    expect(markup).toContain('第 1 章');
+    // The old standalone toolbar and its duplicate question line are gone.
+    expect(markup).not.toContain('review-toolbar');
+    expect(markup).not.toContain('page-header');
   });
 
   it('fills the viewport with the question when opened from the library', () => {
