@@ -1,6 +1,19 @@
+# Line endings.
+#
+# Git stores every text file with LF in the repository. On checkout the working
+# tree follows core.autocrlf, so Windows keeps CRLF while the stored blobs stay
+# LF. Without this rule a file edited with mixed or LF endings shows up as
+# "modified" even though its content is identical.
+* text=auto
+
+# Binary assets must never be line-ending converted or word-diffed.
 *.docx binary
-*.otf binary
+*.xlsx binary
+*.ico binary
+*.png binary
 *.jpg binary
 *.jpeg binary
-*.png binary
-*.ico binary
+*.otf binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
