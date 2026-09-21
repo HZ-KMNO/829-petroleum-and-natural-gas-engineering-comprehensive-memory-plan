@@ -13,9 +13,7 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
   const [session, setSession] = useState(() => ({ items: queue, index: 0 }));
   const sessionPlan = useRef(plan).current;
   const [revealed, setRevealed] = useState(false);
-  const [answer, setAnswer] = useState('');
   const [mode, setMode] = useState('cloze');
-  const answerRef = useRef(null);
 
   const { items: sessionQueue, index } = session;
   const active = focusedQuestion ?? sessionQueue[index];
@@ -23,7 +21,6 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
 
   useEffect(() => {
     setRevealed(false);
-    setAnswer('');
   }, [active?.id]);
 
   useEffect(() => {
@@ -58,7 +55,6 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
     if (!active) return;
     onGrade(active.id, grade);
     setRevealed(false);
-    setAnswer('');
     if (isFocused) {
       onClearFocus();
       return;
@@ -151,18 +147,6 @@ export function ReviewPage({ queue, plan, focusedQuestion, onClearFocus, onGrade
           revealOnClick={mode === 'cloze' && !revealed}
         />
       </article>
-
-      <div className="answer-area">
-        <label htmlFor="self-answer">我的答案</label>
-        <textarea
-          id="self-answer"
-          ref={answerRef}
-          value={answer}
-          onChange={(event) => setAnswer(event.target.value)}
-          placeholder="写下关键词或答题骨架…"
-          rows={3}
-        />
-      </div>
 
       {!isFocused && (
         <div className="question-navigation" aria-label="题目切换">
